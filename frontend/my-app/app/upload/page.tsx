@@ -34,32 +34,36 @@ export default function Upload() {
       reader.readAsDataURL(file);
 
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("image", file);  // Changed from "file" to "image" to match Flask backend
 
       await new Promise(resolve => setTimeout(resolve, 1500));
 
       setStatus("analyzing");
 
       try {
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const response = await axios.post("/api/analyze", formData, {
+        // Send to Flask backend
+        const response = await axios.post("http://localhost:5000/receive", formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
-        sessionStorage.setItem("analysisResult", JSON.stringify(response.data));
-        setStatus("success");
-      } catch (err: unknown) {
-        console.warn("API unavailable, running demo simulation.", err);
+        console.log("Backend response:", response.data);
+
+        // For now, use demo result until AI model is integrated
         await new Promise(resolve => setTimeout(resolve, 500));
 
         const demoResult = {
           prediction: "Pneumonia",
           confidence: 0.94,
           heatmap: null,
-          details: "Opacity observed in right lower lobe consistent with bacterial pneumonia patterns."
+          details: "Opacity observed in right lower lobe consistent with bacterial pneumonia patterns.",
+          backendFileInfo: response.data.data  // Store backend file info
         };
         sessionStorage.setItem("analysisResult", JSON.stringify(demoResult));
         setStatus("success");
+      } catch (err: unknown) {
+        console.error("Backend upload failed:", err);
+        setError("Failed to upload image to backend. Make sure the Flask server is running on port 5000.");
+        setStatus("error");
       }
     } catch (err: any) {
       console.error(err);
