@@ -1,43 +1,22 @@
-# Flask Backend - Image Upload API
+# X-Ray Classification Backend
 
-A simple Flask backend for receiving and processing image uploads from the frontend.
+## Setup Instructions
 
-## Features
-
-- **Image Upload**: Accepts image files via POST request
-- **CORS Support**: Enabled for frontend communication
-- **File Validation**: Validates file types and sizes
-- **Unique Filenames**: Generates timestamped filenames to avoid collisions
-- **Error Handling**: Comprehensive error responses
-- **Health Check**: Endpoint to verify server status
-
-## Setup
-
-### 1. Create a Virtual Environment (recommended)
+### 1. Install Dependencies
 
 ```bash
-python -m venv venv
-```
-
-### 2. Activate Virtual Environment
-
-**Windows:**
-```bash
-venv\Scripts\activate
-```
-
-**macOS/Linux:**
-```bash
-source venv/bin/activate
-```
-
-### 3. Install Dependencies
-
-```bash
+cd backend
 pip install -r requirements.txt
 ```
 
-### 4. Run the Server
+**Note**: PyTorch installation may take several minutes and requires ~1-2GB download.
+
+For GPU support (optional), install the CUDA-enabled version:
+```bash
+pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
+```
+
+### 2. Run the Server
 
 ```bash
 python app.py
@@ -47,74 +26,68 @@ The server will start on `http://localhost:5000`
 
 ## API Endpoints
 
-### POST `/receive`
+### POST /predict
+Classifies an X-ray image
 
-Receives and stores uploaded images.
+**Request**:
+- Content-Type: multipart/form-data
+- Body: image file (png, jpg, jpeg, gif, bmp, tiff, webp)
 
-**Request:**
-- Method: `POST`
-- Content-Type: `multipart/form-data`
-- Body: Form data with `image` field containing the file
-
-**Success Response (200):**
+**Response**:
 ```json
 {
   "success": true,
-  "message": "Image received successfully",
-  "data": {
-    "filename": "image_20251225_155830.jpg",
-    "original_filename": "image.jpg",
-    "filepath": "uploads/image_20251225_155830.jpg",
-    "file_size": 1048576,
-    "file_size_mb": 1.0,
-    "timestamp": "20251225_155830"
+  "message": "Image analyzed successfully",
+  "prediction": {
+    "class": "NORMAL",
+    "confidence": 0.94,
+    "probabilities": {
+      "NORMAL": 0.94,
+      "PNEUMONIA": 0.03,
+      "COVID": 0.02,
+      "TB": 0.01
+    }
+  },
+  "metadata": {
+    "filename": "xray_20231225_153042.jpg",
+    "processing_time_ms": 234
   }
 }
 ```
 
-**Error Response (400):**
-```json
-{
-  "success": false,
-  "error": "Invalid file type",
-  "message": "Allowed file types: png, jpg, jpeg, gif, bmp, tiff, webp",
-  "filename": "document.pdf"
-}
+### POST /receive
+Uploads an image without classification
+
+### GET /health
+Health check endpoint
+
+## Model Information
+
+- **Architecture**: EfficientNet-B0
+- **Classes**: NORMAL, PNEUMONIA, COVID, TB
+- **Input Size**: 224x224 RGB
+- **Normalization**: ImageNet statistics
+
+## Files
+
+- `app.py`: Main Flask application
+- `model.py`: XRayClassifier model definition
+- `inference.py`: Inference engine
+- `requirements.txt`: Python dependencies
+- `uploads/`: Upload directory (created automatically)
+
+## Testing
+
+Test the prediction endpoint:
+```bash
+curl -X POST http://localhost:5000/predict \
+  -F "image=@path/to/xray.jpg" \
+  -H "Content-Type: multipart/form-data"
 ```
 
-### GET `/health`
+## Notes
 
-Health check endpoint to verify server status.
-
-**Success Response (200):**
-```json
-{
-  "status": "healthy",
-  "message": "Flask server is running",
-  "upload_folder": "uploads",
-  "max_file_size_mb": 16.0
-}
-```
-
-## Configuration
-
-- **Upload Folder**: `uploads/`
-- **Max File Size**: 16 MB
-- **Allowed Extensions**: png, jpg, jpeg, gif, bmp, tiff, webp
-- **Port**: 5000
-- **Host**: 0.0.0.0 (accessible from network)
-
-## Frontend Integration Example
-
-```javascript
-const formData = new FormData();
-formData.append('image', imageFile);
-
-const response = await fetch('http://localhost:5000/receive', {
-  method: 'POST',
-  body: formData,
-});
-
-const result = await response.json();
-console.log(result);
-```
+- The model loads on server startup (may take 10-30 seconds)
+- CPU inference: ~2-5 seconds per image
+- GPU inference: ~0.5-1 second per image
+- Maximum file size: 16MB

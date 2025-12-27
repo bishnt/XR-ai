@@ -7,10 +7,9 @@ import { RefreshCw, ArrowLeft, Camera, Activity, Info } from "lucide-react";
 // Mock data for the results
 const MOCK_DISEASES = [
     { name: "Pneumonia", probability: 0.84, severity: "High" },
-    { name: "Tb", probability: 0.12, severity: "Low" },
-    { name: "Pneumothorax", probability: 0.05, severity: "Very Low" },
-    { name: "Atelectasis", probability: 0.28, severity: "Moderate" },
-    { name: "Pleural Effusion", probability: 0.42, severity: "Moderate" },
+    { name: "TB", probability: 0.12, severity: "Low" },
+    { name: "COVID", probability: 0.02, severity: "Low" },
+    { name: "Normal", probability: 0.02, severity: "None" },
 ];
 
 export default function Result() {
@@ -109,10 +108,17 @@ export default function Result() {
                                             CAM Analysis
                                         </span>
                                     </div>
-                                    {/* Heatmap Placeholder - Monochrome Pulse */}
+                                    {/* Heatmap Display */}
                                     <div className="w-full h-full flex items-center justify-center relative">
-                                        <div className="absolute w-[60%] h-[60%] bg-white/10 rounded-full blur-[80px] animate-pulse"></div>
-                                        <div className="absolute w-[40%] h-[40%] bg-white/5 rounded-full blur-[60px] animate-pulse delay-75"></div>
+                                        {analysisResult.heatmap ? (
+                                            <img src={analysisResult.heatmap} alt="Grad-CAM Analysis" className="w-full h-full object-cover" />
+                                        ) : (
+                                            <div className="absolute w-[60%] h-[60%] bg-white/10 rounded-full blur-[80px] animate-pulse"></div>
+                                        )}
+                                        {/* Fallback animation if no heatmap yet or loading */}
+                                        {!analysisResult.heatmap && (
+                                            <div className="absolute w-[40%] h-[40%] bg-white/5 rounded-full blur-[60px] animate-pulse delay-75"></div>
+                                        )}
                                     </div>
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-60"></div>
                                 </div>
@@ -157,47 +163,55 @@ export default function Result() {
                             <h2 className="text-xs uppercase tracking-[0.4em] text-white/30 font-bold mb-8 pl-1">Detailed Findings</h2>
 
                             <div className="space-y-4">
-                                {analysisResult.diseases ? analysisResult.diseases.map((disease: any, index: number) => (
-                                    <div key={disease.name} className="group flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-colors -mx-4 cursor-default">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-white/50 transition-colors"></div>
-                                            <span className="text-lg text-white/60 group-hover:text-white transition-colors font-light">
-                                                {disease.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all duration-1000 ease-out ${disease.probability > 0.5 ? 'bg-white/80' : 'bg-white/20'}`}
-                                                    style={{ width: `${disease.probability * 100}%` }}
-                                                ></div>
+                                {analysisResult.probabilities ? (
+                                    // Use actual probabilities from the prediction
+                                    Object.entries(analysisResult.probabilities as Record<string, number>)
+                                        .sort((a, b) => b[1] - a[1])
+                                        .map(([className, probability]) => (
+                                            <div key={className} className="group flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-colors -mx-4 cursor-default">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-white/50 transition-colors"></div>
+                                                    <span className={`text-lg ${className === analysisResult.prediction ? 'text-white font-normal' : 'text-white/60'} group-hover:text-white transition-colors font-light`}>
+                                                        {className}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full transition-all duration-1000 ease-out ${probability > 0.5 ? 'bg-white/80' : 'bg-white/20'}`}
+                                                            style={{ width: `${probability * 100}%` }}
+                                                        ></div>
+                                                    </div>
+                                                    <span className="font-mono text-lg text-white/30 group-hover:text-white/80 transition-colors w-12 text-right">
+                                                        {(probability * 100).toFixed(0)}%
+                                                    </span>
+                                                </div>
                                             </div>
-                                            <span className="font-mono text-lg text-white/30 group-hover:text-white/80 transition-colors w-12 text-right">
-                                                {(disease.probability * 100).toFixed(0)}%
-                                            </span>
-                                        </div>
-                                    </div>
-                                )) : MOCK_DISEASES.map((disease, index) => (
-                                    <div key={disease.name} className="group flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-colors -mx-4 cursor-default">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-white/50 transition-colors"></div>
-                                            <span className="text-lg text-white/60 group-hover:text-white transition-colors font-light">
-                                                {disease.name}
-                                            </span>
-                                        </div>
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
-                                                <div
-                                                    className={`h-full transition-all duration-1000 ease-out ${disease.probability > 0.5 ? 'bg-white/80' : 'bg-white/20'}`}
-                                                    style={{ width: `${disease.probability * 100}%` }}
-                                                ></div>
+                                        ))
+                                ) : (
+                                    // Fallback to mock data if no probabilities
+                                    MOCK_DISEASES.map((disease, index) => (
+                                        <div key={disease.name} className="group flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-colors -mx-4 cursor-default">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-white/10 group-hover:bg-white/50 transition-colors"></div>
+                                                <span className="text-lg text-white/60 group-hover:text-white transition-colors font-light">
+                                                    {disease.name}
+                                                </span>
                                             </div>
-                                            <span className="font-mono text-lg text-white/30 group-hover:text-white/80 transition-colors w-12 text-right">
-                                                {(disease.probability * 100).toFixed(0)}%
-                                            </span>
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-24 h-1 bg-white/5 rounded-full overflow-hidden">
+                                                    <div
+                                                        className={`h-full transition-all duration-1000 ease-out ${disease.probability > 0.5 ? 'bg-white/80' : 'bg-white/20'}`}
+                                                        style={{ width: `${disease.probability * 100}%` }}
+                                                    ></div>
+                                                </div>
+                                                <span className="font-mono text-lg text-white/30 group-hover:text-white/80 transition-colors w-12 text-right">
+                                                    {(disease.probability * 100).toFixed(0)}%
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
 

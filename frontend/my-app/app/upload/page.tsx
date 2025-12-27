@@ -36,33 +36,42 @@ export default function Upload() {
       const formData = new FormData();
       formData.append("image", file);  // Changed from "file" to "image" to match Flask backend
 
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Brief upload delay for UX
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       setStatus("analyzing");
 
       try {
-        // Send to Flask backend
-        const response = await axios.post("http://localhost:5000/receive", formData, {
+        // Send to Flask backend /predict endpoint
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+        const response = await axios.post(`${apiUrl}/predict`, formData, {
           headers: { "Content-Type": "multipart/form-data" },
         });
 
         console.log("Backend response:", response.data);
 
-        // For now, use demo result until AI model is integrated
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Check if prediction was successful
+        if (response.data.success && response.data.prediction) {
+          const result = {
+            prediction: response.data.prediction.class,
+            confidence: response.data.prediction.confidence,
+            probabilities: response.data.prediction.probabilities,
+            processingTime: response.data.metadata?.processing_time_ms,
+            filename: response.data.metadata?.filename,
+            heatmap: response.data.prediction.heatmap,
+            details: `X-ray image classified as ${response.data.prediction.class} with ${(response.data.prediction.confidence * 100).toFixed(1)}% confidence.`
+          };
 
-        const demoResult = {
-          prediction: "Pneumonia",
-          confidence: 0.94,
-          heatmap: null,
-          details: "Opacity observed in right lower lobe consistent with bacterial pneumonia patterns.",
-          backendFileInfo: response.data.data  // Store backend file info
-        };
-        sessionStorage.setItem("analysisResult", JSON.stringify(demoResult));
-        setStatus("success");
-      } catch (err: unknown) {
-        console.error("Backend upload failed:", err);
-        setError("Failed to upload image to backend. Make sure the Flask server is running on port 5000.");
+          sessionStorage.setItem("analysisResult", JSON.stringify(result));
+          setStatus("success");
+        } else {
+          throw new Error(response.data.message || "Prediction failed");
+        }
+      } catch (err: any) {
+        console.error("Backend prediction failed:", err);
+        const errorMsg = err.response?.data?.message ||
+          "Failed to analyze image. Make sure the backend server is running.";
+        setError(errorMsg);
         setStatus("error");
       }
     } catch (err: any) {
