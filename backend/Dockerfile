@@ -3,7 +3,7 @@ FROM python:3.10-slim
 
 # Install system dependencies for OpenCV and other libraries
 RUN apt-get update && apt-get install -y \
-    libgl1-mesa-glx \
+    libgl1 \
     libglib2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
@@ -33,4 +33,4 @@ ENV PORT=7860
 
 # Run the application
 # Hugging Face Spaces expect the application to run on port 7860
-CMD ["gunicorn", "--bind", "0.0.0.0:7860", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:7860", "--timeout", "120", "app:app"]

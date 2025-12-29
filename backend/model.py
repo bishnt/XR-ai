@@ -48,8 +48,8 @@ class XRayClassifier(nn.Module):
             nn.Linear(512, num_classes)
         )
         
-        # Class names mapping
-        self.class_names = ['Normal', 'Pneumonia', 'COVID', 'TB']
+        # Class names mapping (Alphabetical: COVID, Normal, Pneumonia, TB)
+        self.class_names = ['COVID', 'Normal', 'Pneumonia', 'TB']
     
     def forward(self, x):
         """

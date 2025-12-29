@@ -1,0 +1,8 @@
+--- Results for c4e33785d6e9a4303e474a0b7f3951_big_gallery_20251227_164637.jpeg ---
+Index 0 (Normal): 0.2671
+Index 1 (Pneumonia): 0.2378
+Index 2 (COVID): 0.2486
+Index 3 (TB): 0.2465
+
+Predicted Index: 0
+Predicted Class in current code: Normal

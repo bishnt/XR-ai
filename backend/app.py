@@ -235,6 +235,19 @@ def receive_image():
         }), 500
 
 
+@app.route('/', methods=['GET'])
+def index():
+    """Root route to verify server is running"""
+    return jsonify({
+        'status': 'online',
+        'service': 'XRAI Backend',
+        'endpoints': {
+            'predict': '/predict (POST)',
+            'health': '/health (GET)'
+        }
+    }), 200
+
+
 @app.route('/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
@@ -260,6 +273,9 @@ def file_too_large(e):
     }), 413
 
 
+# Initialize model during import (important for Gunicorn)
+initialize_model()
+
 if __name__ == '__main__':
     print("=" * 60)
     print("Flask Server Starting...")
@@ -267,9 +283,6 @@ if __name__ == '__main__':
     print(f"Max file size: {MAX_FILE_SIZE / (1024 * 1024)}MB")
     print(f"Allowed extensions: {', '.join(ALLOWED_EXTENSIONS)}")
     print("=" * 60)
-    
-    # Initialize model before starting server
-    initialize_model()
     
     print("\nStarting Flask development server...")
     print("Available endpoints:")

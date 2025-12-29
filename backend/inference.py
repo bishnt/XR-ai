@@ -51,8 +51,8 @@ class XRayInference:
             )
         ])
         
-        # Class names
-        self.class_names = ['Normal', 'Pneumonia', 'COVID', 'TB']
+        # Class names (Match model alphabetical order)
+        self.class_names = ['COVID', 'Normal', 'Pneumonia', 'TB']
     
     def preprocess_image(self, image_path):
         """
